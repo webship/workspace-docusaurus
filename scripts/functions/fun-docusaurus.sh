@@ -330,11 +330,12 @@ function testing_configure_docusaurus() {
   fi
 
   echo "Adding the Docusaurus step pack (${DOCUSAURUS_STEPS_PACKAGE} ${DOCUSAURUS_STEPS_VERSION}).";
+  local content ; content="$(docusaurus_content "${project_path}")" ;
 
-  python3 - "${project_path}" "${DOCUSAURUS_STEPS_PACKAGE}" "${DOCUSAURUS_STEPS_VERSION}" <<'PYEOF' || return 1
+  python3 - "${project_path}" "${DOCUSAURUS_STEPS_PACKAGE}" "${DOCUSAURUS_STEPS_VERSION}" "${content}" <<'PYEOF' || return 1
 import json, re, sys
 
-project, pack, version = sys.argv[1:4]
+project, pack, version, content = sys.argv[1:5]
 
 # package.json: the pack as a dev dependency, at the release line this plugin was proven on. A pack the
 # project already has (from npm, or from a tarball or a folder: --add-steps) is kept as it is.
@@ -362,16 +363,20 @@ if ('node_modules/%s/' % pack) not in src:
         sys.exit("  cucumber.js has no require list this can add to. Add this line to it:\n    " + line)
     print('  cucumber.js: the step definitions of %s' % pack)
 
+# The features of the pack are tagged with the kind of site they run on: @test-site (a site built with
+# --test-content) or @template (a site of the classic template). A normal run leaves out the other kind.
+other = '@template' if content == 'test-content' else '@test-site'
 if not re.search(r"^[ \t]*tags:", src, re.M):
     default = re.search(r"^([ \t]*)default:[ \t]*\{[ \t]*$", src, re.M)
     if default:
         pad = default.group(1) + '  '
         block = [
-            pad + "// The pack's assertions that must fail are no part of a normal run.",
-            pad + "tags: process.env.CUCUMBER_TAGS || 'not @wip and not @must-fail',",
+            pad + "// The pack's assertions that must fail are no part of a normal run, nor the scenarios of the",
+            pad + "// pack's features for the other kind of site (%s)." % other,
+            pad + "tags: process.env.CUCUMBER_TAGS || 'not @wip and not @must-fail and not %s'," % other,
         ]
         src = src[:default.end()] + '\n' + '\n'.join(block) + src[default.end():]
-        print('  cucumber.js: the tags that keep the assertions that must fail out of a normal run')
+        print('  cucumber.js: the tags that keep the assertions that must fail and the scenarios for the other kind of site (%s) out of a normal run' % other)
 
 if src != before:
     open(cucumber_file, 'w').write(src)

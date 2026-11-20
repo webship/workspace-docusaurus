@@ -154,14 +154,17 @@ bash cmd-tools-testing.sh mydocs --run --path tests/features/site.feature
 `cmd-tools-testing.sh` is the workspace's own. For a Docusaurus project it also adds
 `@webship-js/docusaurus-steps` to `package.json` (a pack the project already has, from npm or from a
 tarball, is kept), lists its step definitions in `cucumber.js` after webship-js's own, writes the tags
-that keep the pack's assertions that must fail out of a normal run, and places
+that keep the pack's assertions that must fail out of a normal run, and the scenarios of the pack's
+features for the other kind of site (`@template` on a site with the test content, `@test-site` on a
+site of the template), and places
 `tests/features/site.feature` when the project has none: the one of the test content on a site built
 with `--test-content`, else the one of the classic template. The testing stack lives at the top of the
 project, beside `site/`. Run it again and it adds what is missing and keeps what you changed.
 
 The features of the step pack tagged `@test-site` run as they are on a site built with
 `--test-content`: the content is the same as the pack's own build, from the same script. The ones
-tagged `@template` run on a site built without flags.
+tagged `@template` run on a site built without flags. `bash cmd-tools-testing.sh <name> --examples
+docusaurus` copies them all into the project, and a normal run picks the ones of the site.
 
 ## The AI items
 

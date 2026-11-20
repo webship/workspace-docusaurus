@@ -98,7 +98,7 @@ test('the testing hook wires the pack and the tags, and the first feature of the
   assert.strictEqual(pkg.devDependencies['@webship-js/docusaurus-steps'], '^2.0.0');
   const cucumber = fs.readFileSync(path.join(p.dir, 'cucumber.js'), 'utf8');
   assert.match(cucumber, /'node_modules\/webship-js\/tests\/step-definitions\/\*\*\/\*\.js',.*\n\s+'node_modules\/@webship-js\/docusaurus-steps\/tests\/step-definitions\/\*\*\/\*\.js',/, 'the pack after webship-js');
-  assert.match(cucumber, /tags: process\.env\.CUCUMBER_TAGS \|\| 'not @wip and not @must-fail',/);
+  assert.match(cucumber, /tags: process\.env\.CUCUMBER_TAGS \|\| 'not @wip and not @must-fail and not @template',/, 'a normal run leaves out the scenarios for the site of the template');
   assert.doesNotMatch(cucumber, /users:|loginPath/, 'no users registry: there are no accounts');
   const loaded = spawnSync(process.execPath, ['-e', `const c = require(${JSON.stringify(path.join(p.dir, 'cucumber.js'))}).default; if (!c.require.some((r) => r.includes('docusaurus-steps'))) process.exit(1);`], { encoding: 'utf8' });
   assert.strictEqual(loaded.status, 0, `cucumber.js loads: ${loaded.stderr}`);
@@ -116,8 +116,20 @@ test('the testing hook gives the site of the template its own first feature', ()
   const env = { WORKSPACE_ROOT: p.root, WORKSPACE_SCRIPTS: p.scripts, doc_name: 'dev', PROJECT_NAME: 'docs1' };
   const r = bash(`testing_configure_docusaurus ${p.dir}`, env);
   assert.strictEqual(r.status, 0, r.stderr + r.stdout);
-  assert.match(fs.readFileSync(path.join(p.dir, 'cucumber.js'), 'utf8'), /@webship-js\/docusaurus-steps/);
+  const cucumber = fs.readFileSync(path.join(p.dir, 'cucumber.js'), 'utf8');
+  assert.match(cucumber, /@webship-js\/docusaurus-steps/);
+  assert.match(cucumber, /tags: process\.env\.CUCUMBER_TAGS \|\| 'not @wip and not @must-fail and not @test-site',/, 'a normal run leaves out the scenarios for the test site');
   assert.strictEqual(fs.readFileSync(path.join(p.dir, 'tests', 'features', 'site.feature'), 'utf8'), fs.readFileSync(path.join(PKG, 'testing', 'site.feature'), 'utf8'));
+});
+
+test('the testing hook keeps a tags line the project already has', () => {
+  const p = project('test-content');
+  fs.writeFileSync(path.join(p.dir, 'cucumber.js'), SCAFFOLD.replace("    paths:", "    tags: 'not @slow',\n    paths:"));
+  const r = bash(`testing_configure_docusaurus ${p.dir}`, { WORKSPACE_ROOT: p.root, WORKSPACE_SCRIPTS: p.scripts, doc_name: 'dev', PROJECT_NAME: 'docs1' });
+  assert.strictEqual(r.status, 0, r.stderr + r.stdout);
+  const cucumber = fs.readFileSync(path.join(p.dir, 'cucumber.js'), 'utf8');
+  assert.match(cucumber, /tags: 'not @slow',/);
+  assert.strictEqual((cucumber.match(/^\s*tags:/gm) || []).length, 1, 'one tags line, the project\'s own');
 });
 
 test('the testing hook keeps a pack the project already has, from npm or from a tarball', () => {
