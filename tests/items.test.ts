@@ -92,7 +92,7 @@ test('a prompt is a line that says what it is for, then the whole launch command
 // What an item may name. The plugin's own commands and their flags are read from the package; the
 // workspace's are the ones a sites folder and an AI folder carry (github.com/webship/workspace).
 const CORE_COMMANDS: Record<string, string[]> = {
-  'cmd-tools-testing.sh': ['--run', '--configure', '--browser', '--path', '--headed', '--dry-run', '--retry', '--tags'],
+  'cmd-tools-testing.sh': ['--run', '--configure', '--browser', '--path', '--headed', '--dry-run', '--retry', '--tags', '--profile', '--list-steps', '--add-steps', '--remove-steps', '--examples'],
   'cmd-tools-add-users.sh': [],
   'cmd-tools-cancel-users.sh': [],
   'cmd-tools-remove.sh': [],
