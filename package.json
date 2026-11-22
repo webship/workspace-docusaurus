@@ -1,6 +1,6 @@
 {
   "name": "@webship.co/workspace-docusaurus",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Docusaurus for Webship Workspace: the builder (`cmd-docusaurus-project.sh`, a documentation site made with create-docusaurus, the classic template in TypeScript, with versions of its docs, a second language, the local search or the step pack's whole test content, built for production and served in a container) and the CLI tool in every sites folder, the Docusaurus step pack wired into the testing setup, and its AI items in their folders: two agents, a skill, a command and two prompts.",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
