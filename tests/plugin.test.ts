@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { spawnSync } from 'child_process';
 
@@ -82,7 +83,7 @@ test('the args offer the documented options', () => {
 });
 
 test('the test site script is the step pack\'s own: no account, nothing from the network, example addresses only', () => {
-  const src = read('scripts/node/docusaurus-test-site.cjs');
+  const src = read('scripts/node/docusaurus-test-site.cts');
   for (const flag of ['--test-content', '--versions', '--locales', '--search']) assert.ok(src.includes(`'${flag}'`), `the script takes ${flag}`);
   assert.match(src, /run\('docusaurus', 'docs:version', '1\.0'\)/, 'versions are cut with the CLI of the site');
   assert.match(src, /run\('docusaurus', 'write-translations', '--locale', 'fr'\)/, 'the translations are written by the CLI of the site');
@@ -124,4 +125,23 @@ test('the README says what the plugin ships, what it needs, and that a documenta
   assert.doesNotMatch(readme, /DDEV-only/i);
   assert.match(readme, /no accounts/, 'it says there are no accounts');
   assert.doesNotMatch(readme, /\/home\/(?!YOUR_USER)[a-z]/, 'no personal path');
+});
+
+test('the test site script is TypeScript Node.js runs as it is, and refuses what it cannot do', () => {
+  const file = path.join(PKG, 'scripts', 'node', 'docusaurus-test-site.cts');
+  const src = read('scripts/node/docusaurus-test-site.cts');
+  // Erasable syntax only: Node.js strips the types and runs what is left.
+  assert.doesNotMatch(src, /^\s*(enum|namespace)\s|^import .* = require\(|\/\/ @ts-nocheck|: any\b/m);
+  assert.match(JSON.parse(read('package.json')).scripts.lint, /tsconfig\.scripts\.json/, 'npm run lint type-checks it');
+  const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'docusaurus-test-site-'));
+  const nothing = spawnSync(process.execPath, [file], { cwd: empty, encoding: 'utf8' });
+  assert.strictEqual(nothing.status, 2, nothing.stderr);
+  assert.strictEqual(nothing.stderr.trim(), 'Nothing to do. Options: --test-content, --versions, --locales, --search.');
+  const unknown = spawnSync(process.execPath, [file, '--blog'], { cwd: empty, encoding: 'utf8' });
+  assert.strictEqual(unknown.status, 2);
+  assert.strictEqual(unknown.stderr.trim(), 'Unknown option --blog. Options: --test-content, --versions, --locales, --search.');
+  const notASite = spawnSync(process.execPath, [file, '--versions'], { cwd: empty, encoding: 'utf8' });
+  assert.strictEqual(notASite.status, 1);
+  assert.strictEqual(notASite.stderr.trim(), `${empty} is not a site made with create-docusaurus classic --typescript, with its packages installed.`);
+  for (const f of fs.readdirSync(path.join(PKG, 'scripts', 'node'))) assert.match(f, /\.(cts|mts|ts)$/, `${f} is TypeScript`);
 });

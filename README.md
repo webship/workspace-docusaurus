@@ -66,7 +66,7 @@ Everything the builder runs for a site runs in the site's own container, through
 | `commands/cmd-tools-docusaurus-cli.sh` | The `docusaurus` CLI and npm for one site: what the site is, a `docusaurus` command, npm, a production build, the build served again, an update |
 | `scripts/functions/fun-docusaurus.sh` | The bash functions behind both, sourced by bootstrap once installed; the names the core's tools look for (`set_docusaurus_users`, `add_docusaurus_users`, `cancel_docusaurus_users`, `testing_configure_docusaurus`) |
 | `scripts/args/arg-docusaurus.sh`, `arg-docusaurus-cli.sh` | Their argparse; the Build form draws the builder's flags from the first |
-| `scripts/node/docusaurus-test-site.cjs` | The versions, the second language, the local search and the test content of the step pack, written into a site `create-docusaurus` made (the same script as the step pack's own build) |
+| `scripts/node/docusaurus-test-site.cts` | The versions, the second language, the local search and the test content of the step pack, written into a site `create-docusaurus` made (the same script as the step pack's own build) |
 | `testing/site.feature`, `testing/test-site.feature` | The first feature a project gets when testing is set up: the classic template's, the test content's |
 | `ai/agents/docusaurus-site-builder.md` | The agent that builds and maintains Docusaurus sites with these commands |
 | `ai/agents/docusaurus-tester.md` | The agent that writes and runs scenarios with the Docusaurus step pack |
@@ -115,9 +115,9 @@ bash cmd-docusaurus-project.sh mydocs --install --versions --locales --search
 | `--launch` | Open the site when it is ready |
 
 The site answers at `https://mydocs.ddev.site`. The build runs `ddev config --project-type=generic`
-with the Node.js of the workspace (24) baked into the web image, makes the site in `site/` with
+with the Node.js of the workspace (26) baked into the web image, makes the site in `site/` with
 `create-docusaurus`, installs its packages with npm, adds what the flags ask for with
-`scripts/node/docusaurus-test-site.cjs` (in the site for the time of the call), and with `--install`
+`scripts/node/docusaurus-test-site.cts` (in the site for the time of the call), and with `--install`
 builds and serves it. A project of the same name is deleted first.
 
 npm 11 in the container skips the install scripts of two packages of the site (core-js, which prints a
@@ -188,6 +188,11 @@ npm install
 npm run lint && npm test         # the manifest, the commands, the functions, the items
 git ls-files -z '*.sh' | xargs -0 -n1 bash -n
 ```
+
+The plugin is TypeScript throughout. `scripts/node/docusaurus-test-site.cts` is not compiled: the builder
+copies it into the site for the time of a call and the Node.js of the container runs it as it is (type
+stripping, from Node.js 22.18, the lowest the Workspace accepts). It is a CommonJS module with erasable
+syntax only; `npm run lint` type-checks it (`tsconfig.scripts.json`).
 
 Prove it in a throwaway workspace before a release: `webship-workspace init`, then require the plugin
 from its packed tarball, activate and install it with `--with-needs`; check that Settings lists it, the
