@@ -4,18 +4,19 @@
 // Turns a site that `create-docusaurus <name> classic --typescript` just made
 // into the site the step pack's features run on, or adds one feature to it.
 // The same file is site/test-site.cjs of the step pack (@webship-js/docusaurus-steps)
-// and scripts/node/docusaurus-test-site.cjs of the Workspace plugin
-// (@webship.co/workspace-docusaurus): both builds give the same site.
+// and scripts/node/docusaurus-test-site.cts of the Workspace plugin
+// (@webship.co/workspace-docusaurus): both builds give the same site. The
+// plugin's copy is TypeScript (the pack's is its JavaScript form).
 // Run in the folder of the site, in its container, before the build:
 //
-//   node test-site.cjs --test-content   the pack's test site: its own docs (with
+//   node test-site.cts --test-content   the pack's test site: its own docs (with
 //                                       tabs, admonitions and code blocks), three
 //                                       versions of them, a French locale, its own
 //                                       blog, an announcement bar, a dropdown in
 //                                       the navbar and the local search
-//   node test-site.cjs --versions       the docs in three versions (Next, 2.0, 1.0)
-//   node test-site.cjs --locales        a second locale, French (fr)
-//   node test-site.cjs --search         the local search (the package
+//   node test-site.cts --versions       the docs in three versions (Next, 2.0, 1.0)
+//   node test-site.cts --locales        a second locale, French (fr)
+//   node test-site.cts --search         the local search (the package
 //                                       @easyops-cn/docusaurus-search-local must be
 //                                       installed in the site)
 //
@@ -25,10 +26,33 @@
 //
 // Nothing here is fetched from the network, and nothing names an account: a
 // documentation site has none. The addresses are at example.com.
+//
+// TypeScript, run by Node.js as it is (type stripping, from Node.js 22.18): a
+// CommonJS module (.cts) with erasable syntax only, so there is nothing to
+// build. `npm run lint` of the plugin type-checks it.
 
-const fs = require('fs');
-const path = require('path');
-const { execFileSync } = require('child_process');
+const fs: typeof import('node:fs') = require('node:fs');
+const path: typeof import('node:path') = require('node:path');
+const { execFileSync }: typeof import('node:child_process') = require('node:child_process');
+
+/** A message of a translation file write-translations wrote. */
+interface TranslationMessage {
+  message: string;
+  description?: string;
+}
+
+/** A post of the test site's blog. */
+interface Post {
+  title: string;
+  slug: string;
+  authors: string[];
+  tags: string[];
+  summary: string;
+  body: string;
+}
+
+/** The versions of the docs: Next (the docs folder), 2.0 and 1.0. */
+type Version = 'next' | '2.0' | '1.0';
 
 const SITE = process.cwd();
 const args = new Set(process.argv.slice(2));
@@ -55,37 +79,38 @@ if (!fs.existsSync(CONFIG) || !fs.existsSync(path.join(SITE, 'node_modules', '@d
 }
 const MARK = 'webship-test-site';
 
-function write(file, text) {
+function write(file: string, text: string): void {
   const target = path.join(SITE, file);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, text.replace(/^\n/, ''));
 }
 
-function run(command, ...rest) {
+function run(command: string, ...rest: string[]): void {
   execFileSync(path.join(SITE, 'node_modules', '.bin', command), rest, { cwd: SITE, stdio: 'inherit' });
 }
 
-function readJson(file) {
+function readJson<T>(file: string): T {
   return JSON.parse(fs.readFileSync(path.join(SITE, file), 'utf8'));
 }
 
-function writeJson(file, data) {
+function writeJson(file: string, data: unknown): void {
   write(file, `${JSON.stringify(data, null, 2)}\n`);
 }
 
 // Put French messages into a translation file that write-translations wrote:
 // each key given must be there.
-function translate(file, messages) {
-  const data = readJson(file);
+function translate(file: string, messages: Record<string, string>): void {
+  const data = readJson<Record<string, TranslationMessage>>(file);
   for (const [key, message] of Object.entries(messages)) {
-    if (!data[key]) throw new Error(`${file} has no message "${key}" to translate.`);
-    data[key].message = message;
+    const entry = data[key];
+    if (!entry) throw new Error(`${file} has no message "${key}" to translate.`);
+    entry.message = message;
   }
   writeJson(file, data);
 }
 
 // Change the template's own configuration: each anchor must be there once.
-function edit(config, anchor, replacement, what) {
+function edit(config: string, anchor: string, replacement: string, what: string): string {
   const count = config.split(anchor).length - 1;
   if (count !== 1) {
     throw new Error(`Cannot add ${what}: docusaurus.config.ts has ${count} copies of "${anchor.trim()}" (one expected). The template changed; add it by hand.`);
@@ -93,7 +118,7 @@ function edit(config, anchor, replacement, what) {
   return config.replace(anchor, replacement);
 }
 
-function searchTheme(languages) {
+function searchTheme(languages: readonly string[]): string {
   return [
     "  // A search that runs in the browser, on an index the build writes: no account, no outside service.",
     '  themes: [',
@@ -278,7 +303,7 @@ const sidebars: SidebarsConfig = {
 export default sidebars;
 `;
 
-function intro(version) {
+function intro(version: Version): string {
   const what = version === 'next'
     ? 'This is the **Next** version: what it describes is not released yet.'
     : `This is the documentation of version **${version}**.`;
@@ -312,7 +337,7 @@ Ask on the [support page](/support).
 `;
 }
 
-function introFr(version) {
+function introFr(version: Version): string {
   const what = version === 'next'
     ? 'Ceci est la version **Next** : ce qu\'elle décrit n\'est pas encore publié.'
     : `Ceci est la documentation de la version **${version}**.`;
@@ -488,8 +513,8 @@ const port: number = config.port;
 | \`open\` | \`false\` |
 `;
 
-function paragraphs(topic, count) {
-  const out = [];
+function paragraphs(topic: string, count: number): string {
+  const out: string[] = [];
   for (let i = 1; i <= count; i += 1) {
     out.push(`This is paragraph ${i} about ${topic}. A page of the guides is long, so that its table of contents follows the reader down the page: the heading of the part that is in view is the one the table of contents marks.`);
   }
@@ -698,7 +723,7 @@ community:
   description: News from the people around the Example project
 `;
 
-function post(file, { title, slug, authors, tags, summary, body }) {
+function post(file: string, { title, slug, authors, tags, summary, body }: Post): void {
   write(`blog/${file}`, `
 ---
 title: ${title}
@@ -715,7 +740,7 @@ ${body}
 `);
 }
 
-const POSTS = [
+const POSTS: readonly (readonly [file: string, post: Post])[] = [
   ['2026-01-15-welcome.mdx', { title: 'Welcome to Example Docs', slug: 'welcome', authors: ['alex'], tags: ['community'],
     summary: 'Example Docs is where the Example project keeps its documentation.',
     body: 'Every page can be edited: follow the "Edit this page" link at the foot of a page.' }],
@@ -733,7 +758,7 @@ const POSTS = [
     body: 'Its pages are under Docs, in the version Next.' }],
 ];
 
-function testSite() {
+function testSite(): void {
   const config = fs.readFileSync(CONFIG, 'utf8');
   if (config.includes(MARK)) {
     console.log('The test content is already there; nothing is changed.');
@@ -790,7 +815,7 @@ function testSite() {
   });
   for (const version of ['current', 'version-2.0', 'version-1.0']) {
     const file = `i18n/fr/docusaurus-plugin-content-docs/${version}.json`;
-    const messages = {
+    const messages: Record<string, string> = {
       'sidebar.docsSidebar.category.Getting Started': 'Premiers pas',
       'sidebar.docsSidebar.category.Getting Started.link.generated-index.description': 'Installer le projet et écrire son fichier de réglages.',
       'sidebar.docsSidebar.category.Guides': 'Guides',
@@ -809,14 +834,14 @@ function testSite() {
 // One feature at a time, on the template's own site
 // ---------------------------------------------------------------------------
 
-function templateFeatures() {
+function templateFeatures(): void {
   let config = fs.readFileSync(CONFIG, 'utf8');
   if (config.includes(MARK)) {
     console.log('This site has the test content, which has every feature already; nothing is changed.');
     return;
   }
   const NAVBAR_ITEMS = /(\n    navbar: \{[\s\S]*?\n      items: \[\n)/;
-  const navbarItem = (item, what) => {
+  const navbarItem = (item: string, what: string): void => {
     if (!NAVBAR_ITEMS.test(config)) throw new Error(`Cannot add ${what}: docusaurus.config.ts has no navbar items list. The template changed; add it by hand.`);
     config = config.replace(NAVBAR_ITEMS, `$1        ${item}\n`);
   };
@@ -860,7 +885,7 @@ function templateFeatures() {
 try {
   if (testContent) testSite();
   else templateFeatures();
-} catch (err) {
-  console.error(String((err && err.message) || err));
+} catch (err: unknown) {
+  console.error(err instanceof Error ? err.message : String(err));
   process.exit(1);
 }

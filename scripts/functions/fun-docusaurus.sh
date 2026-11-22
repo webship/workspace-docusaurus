@@ -36,7 +36,7 @@ readonly DOCUSAURUS_SEARCH_VERSION='0.55.3';
 # The Node.js script the plugin places with itself in core/scripts/plugins/docusaurus/: the versions,
 # the second language, the local search and the test content of the step pack, written into a site
 # create-docusaurus made (the same script as the step pack's own build).
-DOCUSAURUS_TEST_SITE="${WORKSPACE_SCRIPTS}/plugins/docusaurus/docusaurus-test-site.cjs";
+DOCUSAURUS_TEST_SITE="${WORKSPACE_SCRIPTS}/plugins/docusaurus/docusaurus-test-site.cts";
 
 # A documentation site has no accounts: the list is empty.
 function set_docusaurus_users() {
@@ -167,10 +167,10 @@ function docusaurus_test_site() {
     echo "The plugin's test site script is missing: ${DOCUSAURUS_TEST_SITE} (install the plugin again)." ;
     return 1 ;
   fi
-  cp "${DOCUSAURUS_TEST_SITE}" site/.webship-test-site.cjs || return 1 ;
+  cp "${DOCUSAURUS_TEST_SITE}" site/.webship-test-site.cts || return 1 ;
   local status=0 ;
-  docusaurus_exec "node .webship-test-site.cjs $*" || status=$? ;
-  rm -f site/.webship-test-site.cjs ;
+  docusaurus_exec "node .webship-test-site.cts $*" || status=$? ;
+  rm -f site/.webship-test-site.cts ;
   return ${status} ;
 }
 

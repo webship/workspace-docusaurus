@@ -45,7 +45,7 @@ function project(kind: 'test-content' | 'template' | 'drupal') {
   fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'docs1', devDependencies: { 'webship-js': '^2.0.16' } }, null, 2));
   const scripts = path.join(root, 'core', 'scripts');
   fs.mkdirSync(path.join(scripts, 'plugins', 'docusaurus'), { recursive: true });
-  for (const f of ['testing/site.feature', 'testing/test-site.feature', 'scripts/node/docusaurus-test-site.cjs']) {
+  for (const f of ['testing/site.feature', 'testing/test-site.feature', 'scripts/node/docusaurus-test-site.cts']) {
     fs.copyFileSync(path.join(PKG, f), path.join(scripts, 'plugins', 'docusaurus', path.basename(f)));
   }
   return { root, dir, scripts };
@@ -53,8 +53,8 @@ function project(kind: 'test-content' | 'template' | 'drupal') {
 
 /** Run bash with the plugin's functions sourced and `ddev` replaced by a recorder; the recorder notes whether the script was in the site folder. */
 function bash(script: string, env: Record<string, string> = {}) {
-  const fake = 'ddev() { echo "ddev $*" >> "${DDEV_LOG:-/dev/null}" ; if [ "$1" == "exec" ] ; then [ -f site/.webship-test-site.cjs ] && echo "script in the site" >> "${DDEV_LOG:-/dev/null}" ; fi ; return 0 ; }';
-  return spawnSync('bash', ['-c', `${fake}\nsource ${FUNCTIONS}\nDOCUSAURUS_TEST_SITE="\${WORKSPACE_SCRIPTS}/plugins/docusaurus/docusaurus-test-site.cjs"\n${script}`],
+  const fake = 'ddev() { echo "ddev $*" >> "${DDEV_LOG:-/dev/null}" ; if [ "$1" == "exec" ] ; then [ -f site/.webship-test-site.cts ] && echo "script in the site" >> "${DDEV_LOG:-/dev/null}" ; fi ; return 0 ; }';
+  return spawnSync('bash', ['-c', `${fake}\nsource ${FUNCTIONS}\nDOCUSAURUS_TEST_SITE="\${WORKSPACE_SCRIPTS}/plugins/docusaurus/docusaurus-test-site.cts"\n${script}`],
     { encoding: 'utf8', env: { ...process.env, ...env } });
 }
 
@@ -74,12 +74,12 @@ test('the test site script runs in the site folder, with the site\'s packages, a
   const p = project('test-content');
   const log = path.join(p.root, 'ddev.log');
   const env = { WORKSPACE_ROOT: p.root, WORKSPACE_SCRIPTS: p.scripts, doc_name: 'dev', PROJECT_NAME: 'docs1', DDEV_LOG: log };
-  const r = spawnSync('bash', ['-c', `cd ${JSON.stringify(p.dir)} && ${'ddev() { echo "ddev $*" >> "${DDEV_LOG:-/dev/null}" ; [ -f site/.webship-test-site.cjs ] && echo "script in the site" >> "${DDEV_LOG:-/dev/null}" ; return 0 ; }'}\nsource ${FUNCTIONS}\nDOCUSAURUS_TEST_SITE="\${WORKSPACE_SCRIPTS}/plugins/docusaurus/docusaurus-test-site.cjs"\ndocusaurus_test_site --versions --locales`], { encoding: 'utf8', env: { ...process.env, ...env } });
+  const r = spawnSync('bash', ['-c', `cd ${JSON.stringify(p.dir)} && ${'ddev() { echo "ddev $*" >> "${DDEV_LOG:-/dev/null}" ; [ -f site/.webship-test-site.cts ] && echo "script in the site" >> "${DDEV_LOG:-/dev/null}" ; return 0 ; }'}\nsource ${FUNCTIONS}\nDOCUSAURUS_TEST_SITE="\${WORKSPACE_SCRIPTS}/plugins/docusaurus/docusaurus-test-site.cts"\ndocusaurus_test_site --versions --locales`], { encoding: 'utf8', env: { ...process.env, ...env } });
   assert.strictEqual(r.status, 0, r.stderr + r.stdout);
   const written = fs.readFileSync(log, 'utf8');
-  assert.match(written, /^ddev exec -d \/var\/www\/html\/site node \.webship-test-site\.cjs --versions --locales$/m);
+  assert.match(written, /^ddev exec -d \/var\/www\/html\/site node \.webship-test-site\.cts --versions --locales$/m);
   assert.match(written, /^script in the site$/m, 'the script is in the site folder while it runs');
-  assert.ok(!fs.existsSync(path.join(p.dir, 'site', '.webship-test-site.cjs')), 'and gone after');
+  assert.ok(!fs.existsSync(path.join(p.dir, 'site', '.webship-test-site.cts')), 'and gone after');
 });
 
 test('a tool asked about a project that is not a Docusaurus site says so', () => {
