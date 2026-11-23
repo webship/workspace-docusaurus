@@ -27,7 +27,7 @@
 // Nothing here is fetched from the network, and nothing names an account: a
 // documentation site has none. The addresses are at example.com.
 //
-// TypeScript, run by Node.js as it is (type stripping, from Node.js 22.18): a
+// TypeScript, run by Node.js as it is (type stripping, Node.js 24 or later): a
 // CommonJS module (.cts) with erasable syntax only, so there is nothing to
 // build. `npm run lint` of the plugin type-checks it.
 
