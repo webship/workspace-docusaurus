@@ -191,7 +191,7 @@ git ls-files -z '*.sh' | xargs -0 -n1 bash -n
 
 The plugin is TypeScript throughout. `scripts/node/docusaurus-test-site.cts` is not compiled: the builder
 copies it into the site for the time of a call and the Node.js of the container runs it as it is (type
-stripping, from Node.js 22.18, the lowest the Workspace accepts). It is a CommonJS module with erasable
+stripping, on Node.js 24, the lowest the Workspace accepts). It is a CommonJS module with erasable
 syntax only; `npm run lint` type-checks it (`tsconfig.scripts.json`).
 
 Prove it in a throwaway workspace before a release: `webship-workspace init`, then require the plugin
